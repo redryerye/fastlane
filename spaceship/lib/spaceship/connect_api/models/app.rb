@@ -495,6 +495,15 @@ module Spaceship
         resps = client.get_app_clips(app_id: id, filter: filter, includes: includes, limit: limit, sort: sort).all_pages
         resps.flat_map(&:to_models)
       end
+
+      #
+      # Asset Library
+      #
+
+      def get_app_asset_library(client: nil, includes: nil)
+        client ||= Spaceship::ConnectAPI
+        Spaceship::ConnectAPI::AppAssetLibrary.get(client: client, app_id: id, includes: includes)
+      end
     end
   end
 end

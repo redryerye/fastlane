@@ -2,6 +2,7 @@ require_relative 'module'
 require_relative 'app_screenshot'
 require_relative 'app_screenshot_validator'
 require_relative 'app_clip_header_image'
+require_relative 'creative_asset'
 require_relative 'upload_metadata'
 require_relative 'languages'
 
@@ -148,6 +149,61 @@ module Deliver
       end
 
       app_clip_header_images
+    end
+
+    # Returns the list of valid creative assets (e.g. product page header or App Store search
+    # results images). When detecting invalid images, this will cause an error. There may only be
+    # a max of one image per language.
+    #
+    # @param root [String] A directory path
+    # @param ignore_validation [String] Set false not to raise the error when finding invalid folder name
+    # @param asset_name [String] A human readable name of the asset, used in error messages
+    # @param valid_sizes [Array<String>] A list of exact "WIDTHxHEIGHT" sizes the image may match
+    #   (e.g. a placement-specific size plus Apple's shared "universal" creative asset size)
+    # @param size_range [Hash, nil] A Hash with :min_width, :max_width, :min_height and :max_height
+    #   describing an additional allowed size range
+    # @return [Array<Deliver::CreativeAsset>] The list of CreativeAsset that exist under given `root` directory
+    def self.load_creative_assets(root, ignore_validation, asset_name:, valid_sizes: [], size_range: nil)
+      language_folders_list = language_folders(root, ignore_validation, true)
+
+      creative_assets = language_folders_list.flat_map do |language_folder|
+        paths = language_folder.file_paths
+        paths.map { |path| CreativeAsset.new(path, language_folder.language) }
+      end
+
+      creative_assets.each do |creative_asset|
+        size = FastImage.size(creative_asset.path)
+        UI.user_error!("Unable to read #{asset_name} file: #{creative_asset.path}") if size.nil?
+
+        width, height = size
+        actual_size = "#{width}x#{height}"
+
+        matches_exact_size = valid_sizes.include?(actual_size)
+        matches_size_range = size_range &&
+                             width.between?(size_range[:min_width], size_range[:max_width]) &&
+                             height.between?(size_range[:min_height], size_range[:max_height])
+
+        next if matches_exact_size || matches_size_range
+        next if valid_sizes.empty? && size_range.nil?
+
+        allowed = []
+        allowed << "exactly #{valid_sizes.join(' or ')}" unless valid_sizes.empty?
+        if size_range
+          allowed << "between #{size_range[:min_width]}x#{size_range[:min_height]} and #{size_range[:max_width]}x#{size_range[:max_height]}"
+        end
+
+        UI.user_error!("#{asset_name.capitalize} images must be #{allowed.join(', or ')} in size. Offending image has size #{actual_size}: '#{creative_asset.path}'")
+      end
+
+      # validate there is only one image per language
+      # Filter out nil languages (e.g., from default folder) before validation
+      creative_assets.map(&:language).compact.each do |language|
+        if creative_assets.find_all { |creative_asset| creative_asset.language.eql?(language) }.length > 1
+          UI.user_error!("There can only be one #{asset_name} per language. The language #{language} has more than one image.")
+        end
+      end
+
+      creative_assets
     end
 
     # Returns the list of language folders

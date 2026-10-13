@@ -70,6 +70,12 @@ module Spaceship
         return resp.to_models.first
       end
 
+      def add_app_asset_library_image_to_review_items(client: nil, app_asset_library_image_id:)
+        client ||= Spaceship::ConnectAPI
+        resp = client.post_review_submission_item(review_submission_id: id, app_asset_library_image_id: app_asset_library_image_id)
+        return resp.to_models.first
+      end
+
       def fetch_resolution_center_threads(client: nil)
         client ||= Spaceship::ConnectAPI
         resp = client.get_resolution_center_threads(filter: { reviewSubmission: id }, includes: 'reviewSubmission')

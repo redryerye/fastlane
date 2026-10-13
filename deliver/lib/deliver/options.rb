@@ -135,6 +135,14 @@ module Deliver
                                      env_name: "DELIVER_APP_CLIP_DEFAULT_EXPERIENCE_METADATA_PATH",
                                      description: "Path to the folder containing the app clip default experience metadata",
                                      optional: true),
+        FastlaneCore::ConfigItem.new(key: :product_page_header_path,
+                                     env_name: "DELIVER_PRODUCT_PAGE_HEADER_PATH",
+                                     description: "Path to the folder containing the localized App Store product page header images",
+                                     optional: true),
+        FastlaneCore::ConfigItem.new(key: :app_store_search_results_asset_path,
+                                     env_name: "DELIVER_APP_STORE_SEARCH_RESULTS_ASSET_PATH",
+                                     description: "Path to the folder containing the localized App Store search results images",
+                                     optional: true),
 
         # app previews (videos)
         FastlaneCore::ConfigItem.new(key: :app_previews_path,

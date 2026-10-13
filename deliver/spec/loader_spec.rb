@@ -309,4 +309,119 @@ describe Deliver::Loader do
       expect(header_images.all? { |img| img.language.nil? }).to be(true)
     end
   end
+
+  describe "#load_creative_assets" do
+    include(FakeFS::SpecHelpers)
+
+    def add_creative_asset(file)
+      FileUtils.mkdir_p(File.dirname(file))
+      File.open(file, 'w') { |f| f << 'touch' }
+    end
+
+    def collect_creative_assets_from_dir(dir, valid_sizes: [], size_range: nil)
+      Deliver::Loader.load_creative_assets(dir, false, asset_name: "creative asset", valid_sizes: valid_sizes, size_range: size_range)
+    end
+
+    before do
+      allow(FastImage).to receive(:size).and_return([3840, 1646])
+    end
+
+    it "should not find any creative assets when the directory is empty" do
+      creative_assets = collect_creative_assets_from_dir("/CreativeAssets")
+      expect(creative_assets.count).to eq(0)
+    end
+
+    it "should find a creative asset when present in the directory" do
+      add_creative_asset("/CreativeAssets/en-US/header.jpg")
+      creative_assets = collect_creative_assets_from_dir("/CreativeAssets")
+      expect(creative_assets.count).to eq(1)
+      expect(creative_assets.first.language).to eq("en-US")
+    end
+
+    it "should find creative assets from multiple languages" do
+      add_creative_asset("/CreativeAssets/en-US/header.jpg")
+      add_creative_asset("/CreativeAssets/ko/header.jpg")
+      add_creative_asset("/CreativeAssets/ja/header.jpg")
+      creative_assets = collect_creative_assets_from_dir("/CreativeAssets")
+      expect(creative_assets.count).to eq(3)
+      expect(creative_assets.map(&:language)).to contain_exactly("en-US", "ko", "ja")
+    end
+
+    it "should include default folder creative asset with nil language" do
+      add_creative_asset("/CreativeAssets/default/header.jpg")
+      add_creative_asset("/CreativeAssets/en-US/header.jpg")
+      creative_assets = collect_creative_assets_from_dir("/CreativeAssets")
+      expect(creative_assets.count).to eq(2)
+
+      default_asset = creative_assets.find { |asset| asset.language.nil? }
+      expect(default_asset).not_to be_nil
+      expect(default_asset.path).to eq("/CreativeAssets/default/header.jpg")
+    end
+
+    it "should validate creative assets match one of the allowed exact sizes" do
+      add_creative_asset("/CreativeAssets/en-US/header.jpg")
+      allow(FastImage).to receive(:size).and_return([1920, 1080])
+
+      expect do
+        collect_creative_assets_from_dir("/CreativeAssets", valid_sizes: ["3840x1646", "5244x2950"])
+      end.to raise_error(FastlaneCore::Interface::FastlaneError)
+    end
+
+    it "should accept creative assets matching Apple's shared universal asset size" do
+      add_creative_asset("/CreativeAssets/en-US/header.jpg")
+      allow(FastImage).to receive(:size).and_return([5244, 2950])
+
+      creative_assets = collect_creative_assets_from_dir("/CreativeAssets", valid_sizes: ["3840x1646", "5244x2950"])
+      expect(creative_assets.count).to eq(1)
+    end
+
+    it "should accept creative assets matching an exact size even when a size range is also configured" do
+      add_creative_asset("/CreativeAssets/en-US/search.jpg")
+      allow(FastImage).to receive(:size).and_return([5244, 2950])
+
+      creative_assets = collect_creative_assets_from_dir(
+        "/CreativeAssets",
+        valid_sizes: ["5244x2950"],
+        size_range: { min_width: 1920, max_width: 3840, min_height: 1280, max_height: 2560 }
+      )
+      expect(creative_assets.count).to eq(1)
+    end
+
+    it "should validate creative assets fall within a size range" do
+      add_creative_asset("/CreativeAssets/en-US/search.jpg")
+      allow(FastImage).to receive(:size).and_return([100, 100])
+
+      expect do
+        collect_creative_assets_from_dir("/CreativeAssets", size_range: { min_width: 1920, max_width: 3840, min_height: 1280, max_height: 2560 })
+      end.to raise_error(FastlaneCore::Interface::FastlaneError)
+    end
+
+    it "should accept creative assets within a size range" do
+      add_creative_asset("/CreativeAssets/en-US/search.jpg")
+      allow(FastImage).to receive(:size).and_return([2500, 1700])
+
+      creative_assets = collect_creative_assets_from_dir("/CreativeAssets", size_range: { min_width: 1920, max_width: 3840, min_height: 1280, max_height: 2560 })
+      expect(creative_assets.count).to eq(1)
+    end
+
+    it "should validate only one creative asset per language" do
+      add_creative_asset("/CreativeAssets/en-US/header1.jpg")
+      add_creative_asset("/CreativeAssets/en-US/header2.jpg")
+
+      expect do
+        collect_creative_assets_from_dir("/CreativeAssets")
+      end.to raise_error(FastlaneCore::Interface::FastlaneError)
+    end
+
+    it "should filter out nil languages before validation for duplicate check" do
+      add_creative_asset("/CreativeAssets/default/header1.jpg")
+      add_creative_asset("/CreativeAssets/default/header2.jpg")
+
+      # Should not raise error for multiple images in default folder
+      # since nil languages are filtered out during validation
+      creative_assets = collect_creative_assets_from_dir("/CreativeAssets")
+      expect(creative_assets.count).to eq(2)
+      expect(creative_assets.all? { |asset| asset.language.nil? }).to be(true)
+    end
+  end
 end

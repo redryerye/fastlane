@@ -12,6 +12,7 @@ require_relative 'upload_price_tier'
 require_relative 'upload_metadata'
 require_relative 'upload_app_clip_default_experience_metadata'
 require_relative 'upload_app_clip_default_experience_header_images'
+require_relative 'upload_creative_assets'
 require_relative 'upload_screenshots'
 require_relative 'sync_screenshots'
 require_relative 'sync_app_previews'
@@ -167,6 +168,11 @@ module Deliver
       else
         upload_screenshots.upload(options, screenshots)
       end
+
+      # Creative assets (product page header / App Store search results) are placed against a
+      # locale's AppStoreVersionLocalization, so this must run after screenshots/metadata have
+      # created the localizations for every enabled language.
+      UploadCreativeAssets.new.find_and_upload(options)
 
       if options[:app_previews_path]
         previews = Deliver::SyncAppPreviews.new(

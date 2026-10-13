@@ -11,6 +11,8 @@ module Spaceship
       attr_accessor :app_store_version
       attr_accessor :app_store_product_page_version
       attr_accessor :app_event
+      attr_accessor :app_asset_library_image
+      attr_accessor :app_asset_library_video
 
       attr_mapping({
          "state" =>  "state",
@@ -19,6 +21,8 @@ module Spaceship
          "appStoreVersion" => "app_store_version",
          "appCustomProductPageVersion" => "app_store_product_page_version",
          "appEvent" => "app_event",
+         "appAssetLibraryImage" => "app_asset_library_image",
+         "appAssetLibraryVideo" => "app_asset_library_video",
        })
 
       def self.type

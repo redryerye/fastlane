@@ -1244,7 +1244,7 @@ module Spaceship
           tunes_request_client.get("#{Version::V1}/reviewSubmissions/#{review_submission_id}/items", params)
         end
 
-        def post_review_submission_item(review_submission_id:, app_store_version_id: nil)
+        def post_review_submission_item(review_submission_id:, app_store_version_id: nil, app_asset_library_image_id: nil)
           body = {
             data: {
               type: "reviewSubmissionItems",
@@ -1264,6 +1264,15 @@ module Spaceship
               data: {
                 type: "appStoreVersions",
                 id: app_store_version_id
+              }
+            }
+          end
+
+          unless app_asset_library_image_id.nil?
+            body[:data][:relationships][:appAssetLibraryImage] = {
+              data: {
+                type: "appAssetLibraryImages",
+                id: app_asset_library_image_id
               }
             }
           end
@@ -1526,6 +1535,114 @@ module Spaceship
         # https://developer.apple.com/documentation/appstoreconnectapi/delete_a_default_app_clip_experience_image
         def delete_app_clip_header_image(app_clip_header_image_id: nil)
           tunes_request_client.delete("#{Version::V1}/appClipHeaderImages/#{app_clip_header_image_id}")
+        end
+
+        #
+        # appAssetLibraries
+        #
+
+        # https://developer.apple.com/documentation/appstoreconnectapi/get-v1-apps-_id_-assetlibrary
+        def get_app_asset_library(app_id:, includes: nil)
+          params = tunes_request_client.build_params(filter: {}, includes: includes)
+          tunes_request_client.get("#{Version::V1}/apps/#{app_id}/assetLibrary", params)
+        end
+
+        # https://developer.apple.com/documentation/appstoreconnectapi/get-v1-appassetlibraries-_id_-images
+        def get_app_asset_library_images(asset_library_id:, filter: {}, includes: nil, limit: nil, sort: nil)
+          params = tunes_request_client.build_params(filter: filter, includes: includes, limit: limit, sort: sort)
+          tunes_request_client.get("#{Version::V1}/appAssetLibraries/#{asset_library_id}/images", params)
+        end
+
+        #
+        # appAssetLibraryImages
+        #
+
+        # https://developer.apple.com/documentation/appstoreconnectapi/get-v1-appassetlibraryimages-_id_
+        def get_app_asset_library_image(app_asset_library_image_id:, filter: {}, includes: nil, limit: nil, sort: nil)
+          params = tunes_request_client.build_params(filter: filter, includes: includes, limit: limit, sort: sort)
+          tunes_request_client.get("#{Version::V1}/appAssetLibraryImages/#{app_asset_library_image_id}", params)
+        end
+
+        # https://developer.apple.com/documentation/appstoreconnectapi/post-v1-appassetlibraryimages
+        def post_app_asset_library_image(asset_library_id: nil, attributes: {})
+          body = {
+            data: {
+              type: "appAssetLibraryImages",
+              attributes: attributes,
+              relationships: {
+                assetLibrary: {
+                  data: {
+                    type: "appAssetLibraries",
+                    id: asset_library_id
+                  }
+                }
+              }
+            }
+          }
+
+          tunes_request_client.post("#{Version::V1}/appAssetLibraryImages", body)
+        end
+
+        # https://developer.apple.com/documentation/appstoreconnectapi/patch-v1-appassetlibraryimages-_id_
+        def patch_app_asset_library_image(app_asset_library_image_id: nil, attributes: {})
+          body = {
+            data: {
+              type: "appAssetLibraryImages",
+              id: app_asset_library_image_id,
+              attributes: attributes
+            }
+          }
+
+          tunes_request_client.patch("#{Version::V1}/appAssetLibraryImages/#{app_asset_library_image_id}", body)
+        end
+
+        # https://developer.apple.com/documentation/appstoreconnectapi/delete-v1-appassetlibraryimages-_id_
+        def delete_app_asset_library_image(app_asset_library_image_id: nil)
+          tunes_request_client.delete("#{Version::V1}/appAssetLibraryImages/#{app_asset_library_image_id}")
+        end
+
+        # https://developer.apple.com/documentation/appstoreconnectapi/get-v1-appassetlibraryimages-_id_-placements
+        def get_app_asset_library_image_placements(app_asset_library_image_id:, filter: {}, includes: nil, limit: nil, sort: nil)
+          params = tunes_request_client.build_params(filter: filter, includes: includes, limit: limit, sort: sort)
+          tunes_request_client.get("#{Version::V1}/appAssetLibraryImages/#{app_asset_library_image_id}/placements", params)
+        end
+
+        #
+        # appAssetLibraryPlacements
+        #
+
+        # https://developer.apple.com/documentation/appstoreconnectapi/post-v1-appassetlibraryplacements
+        def post_app_asset_library_placement(attributes: {}, relationships: {})
+          body = {
+            data: {
+              type: "appAssetLibraryPlacements",
+              attributes: attributes,
+              relationships: relationships
+            }
+          }
+
+          tunes_request_client.post("#{Version::V1}/appAssetLibraryPlacements", body)
+        end
+
+        # https://developer.apple.com/documentation/appstoreconnectapi/get-v1-appassetlibraryplacements-_id_
+        def get_app_asset_library_placement(app_asset_library_placement_id:, includes: nil)
+          params = tunes_request_client.build_params(filter: {}, includes: includes)
+          tunes_request_client.get("#{Version::V1}/appAssetLibraryPlacements/#{app_asset_library_placement_id}", params)
+        end
+
+        # https://developer.apple.com/documentation/appstoreconnectapi/delete-v1-appassetlibraryplacements-_id_
+        def delete_app_asset_library_placement(app_asset_library_placement_id:)
+          tunes_request_client.delete("#{Version::V1}/appAssetLibraryPlacements/#{app_asset_library_placement_id}")
+        end
+
+        #
+        # appAssetLibraryRefData
+        #
+
+        # https://developer.apple.com/documentation/appstoreconnectapi/get-v1-appassetlibraryrefdata
+        def get_app_asset_library_ref_data(filter: {})
+          params = tunes_request_client.build_params(filter: filter, includes: nil)
+          tunes_request_client.get("#{Version::V1}/appAssetLibraryRefData", params)
         end
 
         #

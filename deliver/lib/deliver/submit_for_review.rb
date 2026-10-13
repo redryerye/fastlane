@@ -46,6 +46,7 @@ module Deliver
       end
 
       submission.add_app_store_version_to_review_items(app_store_version_id: version.id)
+      add_pending_creative_assets_to_review_items(submission)
 
       10.times do
         version_with_latest_info = Spaceship::ConnectAPI::AppStoreVersion.get(app_store_version_id: version.id)
@@ -60,6 +61,18 @@ module Deliver
       end
 
       submission.submit_for_review
+    end
+
+    # Any product page header / App Store search results images uploaded earlier in this `deliver`
+    # run (see `Deliver::UploadCreativeAssets`) also need to be added as their own review submission
+    # items before they can be approved and shown on the App Store.
+    def add_pending_creative_assets_to_review_items(submission)
+      pending_image_ids = Deliver.cache[:pending_asset_library_image_ids] || []
+      return if pending_image_ids.empty?
+
+      pending_image_ids.each do |image_id|
+        submission.add_app_asset_library_image_to_review_items(app_asset_library_image_id: image_id)
+      end
     end
 
     def select_build(options, app, version, platform)
