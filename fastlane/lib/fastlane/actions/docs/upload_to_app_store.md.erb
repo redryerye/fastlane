@@ -339,6 +339,18 @@ See the [App Clip docs](#app-clips) for more info.
 
 ![/img/actions/deliver_app_clip_header_images.png](/img/actions/deliver_app_clip_header_images.png)
 
+##### product_page_header_path
+
+A path to a folder containing subfolders for each language (or a single `default` folder to apply the same image to every language). Each language folder must contain only one image, either exactly 3840x1646px (21:9) or 5244x2950px (16:9 - Apple's shared "universal" creative asset size, also valid for `app_store_search_results_asset_path`).
+
+This uploads the product page header, one of the [new App Store creative assets](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications) that complement your screenshots and App Preview videos. See the [Creative Assets docs](#creative-assets) for more info.
+
+##### app_store_search_results_asset_path
+
+A path to a folder containing subfolders for each language (or a single `default` folder to apply the same image to every language). Each language folder must contain only one image, either between 1920x1280px and 3840x2560px (3:2) or 5244x2950px (16:9 - Apple's shared "universal" creative asset size, also valid for `product_page_header_path`).
+
+This uploads the image shown alongside your app in App Store search results. See the [Creative Assets docs](#creative-assets) for more info.
+
 ## Metadata
 
 All options below are useful if you want to specify certain app metadata in your `Deliverfile` or `Fastfile`
@@ -906,3 +918,22 @@ deliver(
 
 Note that the **default** App Clip experience and the **advanced** App Clip experiences are
 different, [Apple explains this here](https://developer.apple.com/documentation/app_clips/configuring_the_launch_experience_of_your_app_clip/#3671988).
+
+## Creative Assets
+
+You can optionally upload Apple's [new App Store creative assets](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications) using the following options:
+- `product_page_header_path`
+- `app_store_search_results_asset_path`
+
+Unlike screenshots, a creative asset is uploaded once to your app's asset library and then placed against each locale's App Store listing. Newly uploaded assets are reviewed by Apple independently of your app version - when you pass `submit_for_review: true`, _deliver_ automatically adds any newly uploaded creative assets to that same review submission.
+
+Example usage in your `Deliverfile`:
+
+```ruby-skip-tests
+deliver(
+  product_page_header_path: "./fastlane/creative_assets/product_page_header",
+  app_store_search_results_asset_path: "./fastlane/creative_assets/search_results"
+)
+```
+
+Like screenshots and App Clip header images, both options support a `default` language folder to apply the same image to every enabled language. See [Apple's creative assets specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications) for the exact size and format requirements for each placement.
